@@ -1,0 +1,226 @@
+@import 'tailwindcss';
+
+/* ============ 暗色模式：基于 class 切换（mode-watcher 注入 .dark） ============ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============ Tailwind 4 主题令牌（OKLCH） ============ */
+@theme {
+	--font-sans: 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+
+	--radius-glass: 1.5rem;
+
+	--color-bg: oklch(0.98 0.005 280);
+	--color-fg: oklch(0.2 0.02 280);
+	--color-muted: oklch(0.55 0.02 280);
+
+	--ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ============ 全局基础 ============ */
+:root {
+	/* 由 node-vibrant 从当前封面提取并注入，默认中性紫 */
+	--accent-glow: 168 130 220;
+	--accent-glow-2: 120 90 200;
+
+	/* 玻璃参数（亮色） */
+	--glass-bg: rgba(255, 255, 255, 0.55);
+	--glass-border: rgba(255, 255, 255, 0.7);
+	--glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.12);
+	--glass-highlight: rgba(255, 255, 255, 0.9);
+	--glass-blur: 20px;
+	--glass-saturate: 180%;
+
+	--page-bg: oklch(0.97 0.01 280);
+	--text-main: oklch(0.22 0.03 280);
+	--text-sub: oklch(0.5 0.03 280);
+}
+
+:root.dark {
+	/* 玻璃参数（暗色） */
+	--glass-bg: rgba(28, 28, 40, 0.5);
+	--glass-border: rgba(255, 255, 255, 0.12);
+	--glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+	--glass-highlight: rgba(255, 255, 255, 0.18);
+	--glass-blur: 24px;
+	--glass-saturate: 160%;
+
+	--page-bg: oklch(0.16 0.02 280);
+	--text-main: oklch(0.95 0.01 280);
+	--text-sub: oklch(0.7 0.02 280);
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+}
+
+body {
+	font-family: var(--font-sans);
+	color: var(--text-main);
+	background: var(--page-bg);
+	-webkit-font-smoothing: antialiased;
+	overflow: hidden; /* 由内部容器控制滚动，避免播放器栏抖动 */
+	transition:
+		background 0.6s var(--ease-glass),
+		color 0.4s var(--ease-glass);
+}
+
+/* ============ 动态氛围背景（随封面主色变化） ============ */
+.ambient-bg {
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.ambient-bg::before,
+.ambient-bg::after {
+	content: '';
+	position: absolute;
+	border-radius: 50%;
+	filter: blur(80px);
+	opacity: 0.55;
+	transition: background 1.2s var(--ease-glass);
+	will-change: transform;
+}
+
+.ambient-bg::before {
+	width: 60vw;
+	height: 60vw;
+	top: -15vw;
+	left: -10vw;
+	background: radial-gradient(circle, rgb(var(--accent-glow) / 0.9), transparent 70%);
+	animation: float-a 22s ease-in-out infinite;
+}
+
+.ambient-bg::after {
+	width: 55vw;
+	height: 55vw;
+	bottom: -20vw;
+	right: -10vw;
+	background: radial-gradient(circle, rgb(var(--accent-glow-2) / 0.8), transparent 70%);
+	animation: float-b 28s ease-in-out infinite;
+}
+
+:root.dark .ambient-bg::before,
+:root.dark .ambient-bg::after {
+	opacity: 0.4;
+}
+
+@keyframes float-a {
+	0%,
+	100% {
+		transform: translate(0, 0) scale(1);
+	}
+	50% {
+		transform: translate(8vw, 6vh) scale(1.15);
+	}
+}
+
+@keyframes float-b {
+	0%,
+	100% {
+		transform: translate(0, 0) scale(1.05);
+	}
+	50% {
+		transform: translate(-7vw, -5vh) scale(0.92);
+	}
+}
+
+/* ============ Liquid Glass 核心工具类 ============ */
+.glass {
+	position: relative;
+	background: var(--glass-bg);
+	backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+	-webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+	border: 1px solid var(--glass-border);
+	box-shadow:
+		var(--glass-shadow),
+		inset 0 1px 0 0 var(--glass-highlight),
+		inset 0 -1px 1px 0 rgba(255, 255, 255, 0.05);
+	border-radius: var(--radius-glass);
+}
+
+/* 顶部高光镜面反射 */
+.glass::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: linear-gradient(
+		135deg,
+		rgba(255, 255, 255, 0.18) 0%,
+		transparent 40%,
+		transparent 60%,
+		rgba(255, 255, 255, 0.06) 100%
+	);
+	pointer-events: none;
+}
+
+.glass-interactive {
+	transition:
+		transform 0.4s var(--ease-glass),
+		box-shadow 0.4s var(--ease-glass),
+		background 0.4s var(--ease-glass);
+}
+
+.glass-interactive:hover {
+	transform: translateY(-2px);
+	box-shadow:
+		0 12px 40px rgba(31, 38, 135, 0.18),
+		inset 0 1px 0 0 var(--glass-highlight);
+}
+
+/* ============ 滚动条美化 ============ */
+.scroll-area {
+	overflow-y: auto;
+	scrollbar-width: thin;
+	scrollbar-color: rgb(var(--accent-glow) / 0.4) transparent;
+}
+
+.scroll-area::-webkit-scrollbar {
+	width: 6px;
+}
+
+.scroll-area::-webkit-scrollbar-thumb {
+	background: rgb(var(--accent-glow) / 0.4);
+	border-radius: 3px;
+}
+
+.scroll-area::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+/* ============ 文本工具 ============ */
+.text-sub {
+	color: var(--text-sub);
+}
+
+.line-clamp-1 {
+	display: -webkit-box;
+	-webkit-line-clamp: 1;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+/* ============ 唱针旋转动画（封面） ============ */
+@keyframes spin-disc {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.disc-spinning {
+	animation: spin-disc 20s linear infinite;
+}
+
+.disc-paused {
+	animation-play-state: paused;
+}
